@@ -1,0 +1,168 @@
+name: MyST GitHub Pages Deploy
+on:
+  push:
+    branches:
+      - main
+env:
+  # Determines where the website is served from, including CSS & JS assets.
+  # Resolves to your repository name automatically -- you should not need to edit this.
+  BASE_URL: /${{ github.event.repository.name }}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # NOTE: `enablement: true` does NOT reliably turn Pages on for you. Creating a
+      # Pages site calls an API that requires *admin* rights, and the token a workflow
+      # gets only has *write* -- so on a brand-new repo this step fails with
+      # "Create Pages site failed: Resource not accessible by integration".
+      #
+      # Enable Pages once, by hand: Settings -> Pages -> Source -> GitHub Actions.
+      # After that this step is a harmless no-op and every push deploys automatically.
+      #
+      # This step also fails if the organization has workflow permissions set to
+      # read-only -- the `permissions:` block above can only narrow that default,
+      # never widen it.
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          # Keep this matching what students use locally
+          # (conda create -n myst python=3.13) so a build that works on their
+          # machine works here too.
+          python-version: '3.13'
+          cache: pip
+
+      - name: Install system dependencies for Jupyter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Register the Jupyter kernel
+        run: |
+          python -m ipykernel install --user --name=python3
+          jupyter kernelspec list --json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install MyST Markdown
+        run: npm install -g mystmd
+
+      # --execute runs every notebook here, in CI, so the figures on the published
+      # site always match the code in the repo. Drop the flag if it misbehaves --
+      # MyST will then use whatever outputs are saved in the .ipynb files instead.
+      - name: Build HTML
+        run: myst build --html --execute
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './_build/html'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------
+  # PDF export. Runs alongside the website build, never blocks it.
+  #
+  # `myst.yml` declares a Typst export with the `plain_typst_book` template, which
+  # lays out every page in the toc with a table of contents. Kept as its own job so
+  # the site publishes whether or not the PDF succeeds; `continue-on-error` means a
+  # broken PDF shows as a warning rather than failing the whole run.
+  #
+  # Interactive figures reach the PDF as static snapshots: the notebooks set
+  # `pio.renderers.default = "plotly_mimetype+png"`, so each figure emits both an
+  # interactive and a PNG representation and the renderer picks per medium.
+  # That needs kaleido, which is in requirements.txt.
+  # ---------------------------------------------------------------------------
+  pdf:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Register the Jupyter kernel
+        run: python -m ipykernel install --user --name=python3
+
+      # kaleido drives a real Chrome to turn plotly figures into PNGs. Without this
+      # the notebook raises ChromeNotFoundError, execution halts, and the traceback
+      # gets typeset into the book.
+      - name: Install Chrome for static figure export
+        run: plotly_get_chrome -y
+
+      # Prove static export works on the real figure before building. If this fails
+      # the PDF silently loses its figures, which is hard to notice.
+      - name: Verify static image export
+        run: |
+          python - <<'EOF'
+          import plotly.io as pio, plotly.graph_objects as go, numpy as np, plotly
+          from importlib.metadata import version
+          print("plotly", plotly.__version__, "| kaleido", version("kaleido"))
+          x = np.arange(0, 10, 0.01)
+          fig = go.Figure([go.Scatter(x=x, y=np.sin(f*x), visible=(i==0))
+                           for i, f in enumerate(np.arange(0, 5, 0.1))])
+          png = pio.to_image(fig, format="png")
+          print(f"PNG produced: {len(png)} bytes")
+          assert len(png) > 1000, "PNG suspiciously small"
+          EOF
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install MyST Markdown
+        run: npm install -g mystmd
+
+      # Typst instead of LaTeX: one ~30 MB binary rather than a TeX distribution, and
+      # it survives content that breaks LaTeX (nested admonitions inside lists, Unicode).
+      - name: Install Typst
+        run: |
+          curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz -o /tmp/typst.tar.xz
+          mkdir -p /tmp/typst && tar -xJf /tmp/typst.tar.xz -C /tmp/typst --strip-components=1
+          sudo install -m 0755 /tmp/typst/typst /usr/local/bin/typst
+          typst --version
+
+      - name: Build PDF
+        run: myst build --typst --execute
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-pdf
+          path: exports/*.pdf
+          # `error`, not `warn`: a missing PDF should be visible. The job is
+          # continue-on-error, so this still never blocks the website deploy.
+          if-no-files-found: error

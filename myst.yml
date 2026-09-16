@@ -1,0 +1,82 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  # TODO: make this yours
+  title: 'My MyST Book'
+  subtitle: An interactive book built with MyST
+  # TODO: add yourself. This is the same author schema a real MOOC contribution uses.
+  authors:
+    - name: Your Name
+      affiliations:
+        - Polytechnique Montréal
+  copyright: '2026'
+  license: CC-BY-4.0
+  open_access: true
+  date: 2026-09-16
+  keywords:
+    - MRI
+    - education
+
+  numbering:
+    headings: true
+
+  # Hover any of these in the rendered text to see the expansion.
+  abbreviations:
+    MRI: Magnetic resonance imaging
+    MR: Magnetic resonance
+    TR: Repetition Time
+    TE: Echo Time
+    FA: Flip Angle
+    FOV: Field of view
+    PE: Phase encode
+    RO: Readout
+    FFT: Fast Fourier Transform
+    DFT: Discrete Fourier Transform
+    SNR: Signal-to-noise ratio
+    CSF: Cerebrospinal fluid
+
+  bibliography:
+    - bibliography/references.bib
+
+  exclude:
+    - README.md
+
+  # One source, several outputs.
+  exports:
+    # `template` matters here. The default is `plain_latex`, an ARTICLE template,
+    # which renders only ONE document -- you get a title page and a single chapter
+    # with no warning. `plain_latex_book` is a BOOK template: it lays out every
+    # page in the toc, with a table of contents.
+    #
+    # Note that index.md becomes the title page rather than a chapter, so any prose
+    # on it will not appear in the PDF. Put content you want in print on its own page.
+    - format: typst
+      template: plain_typst_book
+      output: exports/my-myst-book.pdf
+      # List the pages that belong in the PDF. Without this, the export sweeps in
+      # EVERY built page -- including notebooks, which reprint their whole source and
+      # a duplicate of the figure. Add new chapters here as well as in `toc`.
+      articles:
+        - file: index.md
+        - file: 01-getting-started.md
+        - file: 02-interactive-figures.md
+
+  toc:
+    - file: index.md
+    - file: 01-getting-started.md
+    - file: 02-interactive-figures.md
+    # Notebooks must appear in the toc for MyST to build (and execute) them --
+    # otherwise `:::{figure} #label` has nothing to embed and silently renders empty.
+    # `hidden: true` keeps it built and referenceable without publishing it as a
+    # chapter of its own, so the reader gets the figure in context rather than a
+    # second copy next to a page of source code.
+    - file: notebooks/figure-demo.ipynb
+      hidden: true
+
+site:
+  template: book-theme
+  options:
+    logo_text: My MyST Book
+  actions:
+    - title: Source on GitHub
+      url: https://github.com/GBM8360

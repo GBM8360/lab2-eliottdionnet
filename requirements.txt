@@ -1,0 +1,27 @@
+# MyST itself -- installs without a separate Node install
+mystmd
+
+# Notebook execution
+jupyter
+ipykernel
+
+# Figures
+numpy
+plotly
+matplotlib
+
+# For the xarray animation example on 02-interactive-figures.md.
+# `xr.tutorial.open_dataset` downloads a sample netCDF at build time, so it needs
+# pooch (the downloader) and a netCDF backend as well as xarray itself.
+xarray
+pooch
+netCDF4
+
+# Renders plotly figures to static images, so interactive figures also appear
+# (as a snapshot) in the PDF export. Pinned: older kaleido resolves differently
+# and silently fails to produce the PNG.
+kaleido>=1.4
+
+# Add whatever your own content needs, e.g.:
+# scipy
+# nibabel
