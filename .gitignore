@@ -7,3 +7,4 @@ venv/
 node_modules/
 .ipynb_checkpoints/
 exports/
+.DS_Store
