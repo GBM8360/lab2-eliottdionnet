@@ -74,6 +74,8 @@ jobs:
       # --execute runs every notebook here, in CI, so the figures on the published
       # site always match the code in the repo. Drop the flag if it misbehaves --
       # MyST will then use whatever outputs are saved in the .ipynb files instead.
+      - name: Prefix iframe paths with BASE_URL
+        run: sed -i "s#^:::{iframe} /figures/#:::{iframe} ${BASE_URL}/figures/#" *.md
       - name: Build HTML
         run: myst build --html --execute
 
