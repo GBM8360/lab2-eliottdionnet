@@ -11,10 +11,7 @@ qui permet de voir l'effet apparaître petit à petit au lieu de juste le consta
 
 ## Prérequis
 
-Le lecteur doit être à l'aise avec les notions de base de la théorie de Fourier. Quand
-un résultat classique est utilisé, on met un lien vers Wikipédia plutôt que de le
-redémontrer.
-
+Le lecteur doit être à l'aise avec les notions de base de la théorie de Fourier.
 ## Plan du livre
 
 Ce livre répond à trois questions, chacune sur sa propre page :
