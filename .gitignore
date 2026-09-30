@@ -8,3 +8,7 @@ node_modules/
 .ipynb_checkpoints/
 exports/
 .DS_Store
+
+# données téléchargées et figures régénérées au build
+data/
+figures/

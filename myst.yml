@@ -1,12 +1,10 @@
 # See docs at: https://mystmd.org/guide/frontmatter
 version: 1
 project:
-  # TODO: make this yours
-  title: 'My MyST Book'
-  subtitle: An interactive book built with MyST
-  # TODO: add yourself. This is the same author schema a real MOOC contribution uses.
+  title: "k-space Explorer — Exploration interactive de l'espace des k"
+  subtitle: TP2 — GBM8360E, du masquage au mouvement du patient
   authors:
-    - name: Your Name
+    - name: DIONNET ELIOTT
       affiliations:
         - Polytechnique Montréal
   copyright: '2026'
@@ -15,25 +13,29 @@ project:
   date: 2026-09-16
   keywords:
     - MRI
+    - k-space
     - education
 
   numbering:
     headings: true
 
-  # Hover any of these in the rendered text to see the expansion.
+  # Les sigles ci-dessous sont reconnus automatiquement dans le texte (sans
+  # accolades) : survolez-les pour voir leur définition.
   abbreviations:
-    MRI: Magnetic resonance imaging
-    MR: Magnetic resonance
-    TR: Repetition Time
-    TE: Echo Time
-    FA: Flip Angle
-    FOV: Field of view
-    PE: Phase encode
-    RO: Readout
-    FFT: Fast Fourier Transform
-    DFT: Discrete Fourier Transform
-    SNR: Signal-to-noise ratio
-    CSF: Cerebrospinal fluid
+    MRI: Imagerie par résonance magnétique (magnetic resonance imaging)
+    IRM: Imagerie par résonance magnétique
+    TR: Temps de répétition (repetition time)
+    TE: Temps d'écho (echo time)
+    FOV: Champ de vue (field of view)
+    PE: Encodage de phase (phase encode)
+    RO: Lecture (readout)
+    FFT: Transformée de Fourier rapide (fast Fourier transform)
+    DFT: Transformée de Fourier discrète (discrete Fourier transform)
+    SNR: Rapport signal sur bruit (signal-to-noise ratio)
+    PSF: Fonction d'étalement du point (point spread function)
+    NUFFT: Transformée de Fourier non uniforme (non-uniform FFT)
+    SENSE: Sensitivity encoding (imagerie parallèle)
+    SPGR: Spoiled gradient echo (écho de gradient déphasé)
 
   bibliography:
     - bibliography/references.bib
@@ -41,42 +43,51 @@ project:
   exclude:
     - README.md
 
-  # One source, several outputs.
+  # Copie le dossier figures/ (pages HTML interactives generees par les
+  # notebooks pendant le build) tel quel dans le site construit, pour la
+  # directive {iframe}. Verifie : la copie a lieu apres l'execution des
+  # notebooks, donc fonctionne aussi sur un clone frais (CI).
+  static_files:
+    - figures
+
+  # Une seule source, plusieurs sorties. La version PDF (typst) est optionnelle
+  # pour ce TP mais gratuite à avoir : gardez `articles` synchronisé avec `toc`.
   exports:
-    # `template` matters here. The default is `plain_latex`, an ARTICLE template,
-    # which renders only ONE document -- you get a title page and a single chapter
-    # with no warning. `plain_latex_book` is a BOOK template: it lays out every
-    # page in the toc, with a table of contents.
-    #
-    # Note that index.md becomes the title page rather than a chapter, so any prose
-    # on it will not appear in the PDF. Put content you want in print on its own page.
     - format: typst
       template: plain_typst_book
       output: exports/my-myst-book.pdf
-      # List the pages that belong in the PDF. Without this, the export sweeps in
-      # EVERY built page -- including notebooks, which reprint their whole source and
-      # a duplicate of the figure. Add new chapters here as well as in `toc`.
       articles:
         - file: index.md
-        - file: 01-getting-started.md
-        - file: 02-interactive-figures.md
+        - file: 01-masquage.md
+        - file: 02-sous-echantillonnage.md
+        - file: 03-mouvement.md
 
   toc:
     - file: index.md
-    - file: 01-getting-started.md
-    - file: 02-interactive-figures.md
-    # Notebooks must appear in the toc for MyST to build (and execute) them --
-    # otherwise `:::{figure} #label` has nothing to embed and silently renders empty.
-    # `hidden: true` keeps it built and referenceable without publishing it as a
-    # chapter of its own, so the reader gets the figure in context rather than a
-    # second copy next to a page of source code.
-    - file: notebooks/figure-demo.ipynb
-      hidden: true
+    - file: 01-masquage.md
+    - file: 02-sous-echantillonnage.md
+    - file: 03-mouvement.md
+    # Les notebooks DOIVENT etre dans ce toc (pas juste presents dans le dossier) :
+    # c'est ce qui declenche leur execution par MyST au moment du build. Sans ca,
+    # sur un clone frais (ex. CI GitHub Actions) ou figures/ n'existe pas encore,
+    # MyST ne sait jamais qu'il doit executer ces notebooks, et figures/fig-*.html
+    # n'est donc jamais genere -> iframe casse en permanence sur le site publie.
+    # (Verifie experimentalement : hors du toc, aucune tentative d'execution ;
+    # dans le toc, MyST tente "Executing notebook ...".)
+    - title: Notebooks (code des figures)
+      children:
+        - file: notebooks/00-intro-log.ipynb
+        - file: notebooks/01-masquage.ipynb
+        - file: notebooks/02-sous-echantillonnage.ipynb
+        - file: notebooks/03-mouvement.ipynb
 
 site:
   template: book-theme
   options:
-    logo_text: My MyST Book
+    logo_text: k-space Explorer
+    # Feuille de style qui donne aux figures interactives une hauteur adaptee
+    # a leur largeur (voir styles/figures.css).
+    style: styles/figures.css
   actions:
     - title: Source on GitHub
-      url: https://github.com/GBM8360
+      url: https://github.com/GBM8360/lab2-eliottdionnet
